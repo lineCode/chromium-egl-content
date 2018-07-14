@@ -29,6 +29,7 @@
 
 namespace EGLContent {
   class MainDelegate;
+  class MediaDelegate;
 }
 
 namespace content {
@@ -40,6 +41,7 @@ namespace content {
     public:
       EGLContentMainDelegate(EGLContent::MainDelegate* main_delegate,
 			     EGLContent::BrowserDelegate* browser_delegate,
+			     EGLContent::MediaDelegate* media_delegate,
 			     EGLContent::BrowserConfig& config);
       ~EGLContentMainDelegate() override;
 
@@ -74,6 +76,7 @@ namespace content {
       // override this.
       ContentBrowserClient* CreateContentBrowserClient() override;
       ContentRendererClient* CreateContentRendererClient() override;
+      ContentGpuClient* CreateContentGpuClient() override;
     private:
 
       EGLContent::BrowserConfig browser_config_;
@@ -81,10 +84,12 @@ namespace content {
       std::unique_ptr<ContentClient> content_client_;
       std::unique_ptr<ContentBrowserClient> browser_client_;
       std::unique_ptr<ContentRendererClient> renderer_client_;
+      std::unique_ptr<ContentGpuClient> gpu_client_;
       std::unique_ptr<EGLContentBrowser> browser_;
 
       EGLContent::MainDelegate* main_delegate_;
       EGLContent::BrowserDelegate* browser_delegate_;
+      EGLContent::MediaDelegate* media_delegate_;
 
       DISALLOW_COPY_AND_ASSIGN(EGLContentMainDelegate);
   };

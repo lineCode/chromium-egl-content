@@ -58,6 +58,12 @@ use_pulseaudio=false
 use_vulcanize=false
 use_alsa=false
 target_os="linux"
+enable_mojo_media=true
+# TODO : add  cdm to media services
+mojo_media_services=["renderer"]
+# Host media service un GPU process to have access
+# to egl functions
+mojo_media_host="gpu"
 # Stuff to look into
 use_sysroot=false
 enable_extensions=true

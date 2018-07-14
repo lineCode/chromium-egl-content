@@ -1,0 +1,124 @@
+--- chromium-55.0.2883.59/content/renderer/render_frame_impl.cc	2018-07-12 17:14:53.773128953 -0400
++++ chromium-55.0.2883.59/content/renderer/render_frame_impl.cc	2018-07-12 17:19:36.691123794 -0400
+@@ -2709,11 +2709,17 @@
+                      base::Unretained(render_thread)),
+           GetMediaInterfaceProvider()));
+ #else
+-  std::unique_ptr<media::RendererFactory> media_renderer_factory(
++  std::unique_ptr<media::RendererFactory> media_renderer_factory =
++      GetContentClient()->renderer()->CreateMediaRendererFactory(
++          media_log);
++
++  if (!media_renderer_factory.get()) {
++    media_renderer_factory.reset(
+       new media::DefaultRendererFactory(
+           media_log, GetDecoderFactory(),
+           base::Bind(&RenderThreadImpl::GetGpuFactories,
+                      base::Unretained(render_thread))));
++  }
+ #endif  // defined(ENABLE_MOJO_RENDERER)
+ 
+   if (!url_index_.get() || url_index_->frame() != frame_)
+--- chromium-55.0.2883.59/content/public/renderer/content_renderer_client.h	2018-07-12 17:29:04.247019273 -0400
++++ chromium-55.0.2883.59/content/public/renderer/content_renderer_client.h	2018-07-12 17:29:18.471116374 -0400
+@@ -273,6 +273,10 @@
+   virtual std::unique_ptr<MediaStreamRendererFactory>
+   CreateMediaStreamRendererFactory();
+ 
++  // Allows an embedder to provide a MediaRendererFactory.
++  virtual std::unique_ptr<media::RendererFactory>
++  CreateMediaRendererFactory(scoped_refptr<media::MediaLog> media_log);
++
+   // Allows an embedder to provide a cc::ImageSerializationProcessor.
+   virtual cc::ImageSerializationProcessor* GetImageSerializationProcessor();
+ 
+--- chromium-55.0.2883.59/content/public/renderer/content_renderer_client.cc	2018-07-12 17:30:33.163626067 -0400
++++ chromium-55.0.2883.59/content/public/renderer/content_renderer_client.cc	2018-07-12 17:33:06.276669927 -0400
+@@ -179,6 +179,11 @@
+   return nullptr;
+ }
+ 
++std::unique_ptr<media::RendererFactory>
++ContentRendererClient::CreateMediaRendererFactory(scoped_refptr<media::MediaLog> media_log) {
++  return nullptr;
++}
++
+ cc::ImageSerializationProcessor*
+ ContentRendererClient::GetImageSerializationProcessor() {
+   return nullptr;
+--- chromium-55.0.2883.59/content/gpu/gpu_child_thread.cc	2018-07-12 17:48:36.490986236 -0400
++++ chromium-55.0.2883.59/content/gpu/gpu_child_thread.cc	2018-07-12 17:49:24.827313357 -0400
+@@ -356,7 +356,9 @@
+       ChildProcess::current()->GetShutDownEvent(), sync_point_manager,
+       gpu_memory_buffer_factory_));
+ 
+-  media_service_.reset(new media::MediaService(gpu_channel_manager_.get()));
++  media_service_.reset(GetContentClient()->gpu()->CreateMediaService(gpu_channel_manager_.get()));
++  if (!media_service_.get())
++    media_service_.reset(new media::MediaService(gpu_channel_manager_.get()));
+ 
+   // Only set once per process instance.
+   service_factory_.reset(new GpuServiceFactory);
+--- chromium-55.0.2883.59/content/public/gpu/content_gpu_client.h	2018-07-12 17:53:30.556974849 -0400
++++ chromium-55.0.2883.59/content/public/gpu/content_gpu_client.h	2018-07-12 18:02:08.316549891 -0400
+@@ -11,6 +11,11 @@
+ namespace gpu {
+ class SyncPointManager;
+ struct GpuPreferences;
++class GpuChannelManager;
++}
++
++namespace media {
++class MediaService;
+ }
+ 
+ namespace shell {
+@@ -43,6 +48,10 @@
+   // Allows client to supply a SyncPointManager instance instead of having
+   // content internally create one.
+   virtual gpu::SyncPointManager* GetSyncPointManager();
++
++  // Allows client to create its own custom media service
++  virtual media::MediaService* CreateMediaService(
++      gpu::GpuChannelManager* gpu_channel_manager);
+ };
+ 
+ }  // namespace content
+--- chromium-55.0.2883.59/content/public/gpu/content_gpu_client.cc	2018-07-12 18:02:29.256695573 -0400
++++ chromium-55.0.2883.59/content/public/gpu/content_gpu_client.cc	2018-07-12 18:05:55.218127141 -0400
+@@ -4,10 +4,17 @@
+ 
+ #include "content/public/gpu/content_gpu_client.h"
+ 
++#include "media/gpu/ipc/service/media_service.h"
++
+ namespace content {
+ 
+ gpu::SyncPointManager* ContentGpuClient::GetSyncPointManager() {
+   return nullptr;
+ }
+ 
++media::MediaService* ContentGpuClient::CreateMediaService(
++      gpu::GpuChannelManager* gpu_channel_manager) {
++  return nullptr;
++}
++
+ }  // namespace content
+--- chromium-55.0.2883.59/media/gpu/ipc/service/media_service.h	2018-07-12 18:10:09.531891644 -0400
++++ chromium-55.0.2883.59/media/gpu/ipc/service/media_service.h	2018-07-12 18:10:51.176180267 -0400
+@@ -27,11 +27,11 @@
+ class MediaService {
+  public:
+   MediaService(gpu::GpuChannelManager* channel_manager);
+-  ~MediaService();
++  virtual ~MediaService();
+ 
+-  void AddChannel(int32_t client_id);
+-  void RemoveChannel(int32_t client_id);
+-  void DestroyAllChannels();
++  virtual void AddChannel(int32_t client_id);
++  virtual void RemoveChannel(int32_t client_id);
++  virtual void DestroyAllChannels();
+ 
+  private:
+   gpu::GpuChannelManager* const channel_manager_;

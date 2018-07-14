@@ -41,10 +41,12 @@ namespace content {
   EGLContentMainDelegate::EGLContentMainDelegate(
     EGLContent::MainDelegate* main_delegate,
     EGLContent::BrowserDelegate* browser_delegate,
+    EGLContent::mediaDelegate* media_delegate,
     EGLContent::BrowserConfig& config)
     : browser_config_(config),
       main_delegate_(main_delegate),
-      browser_delegate_(browser_delegate) {
+      browser_delegate_(browser_delegate),
+      media_delegate_(media_delegate) {
   }
 
   EGLContentMainDelegate::~EGLContentMainDelegate() {
@@ -115,10 +117,10 @@ namespace content {
     return browser_client_.get();
   }
 
-  ContentRendererClient* EGLContentMainDelegate::CreateContentRendererClient() {
-    renderer_client_.reset(new EGLContentRendererClient(main_delegate_));
+  ContentGpuClient* EGLContentMainDelegate::CreateContentGpuClient() {
+    gpu_client_.reset(new EGLContentGPUClient(media_delegate_));
 
-    return renderer_client_.get();
+    return gpu_client_.get();
   }
 
 }

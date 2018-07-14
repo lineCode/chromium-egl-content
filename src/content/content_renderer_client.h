@@ -41,9 +41,13 @@ namespace content {
       // Notifies that a new RenderView has been created.
       void RenderViewCreated(RenderView* render_view) override;
 
-    private:
+      // TODO : MediaStream
+      // std::unique_ptr<MediaStreamRendererFactory> CreateMediaStreamRendererFactory();
 
-      void CreateBrowser(RenderView* render_view, RenderFrame* render_frame);
+      // std::unique_ptr<media::RendererFactory>
+      // CreateMediaRendererFactory(scoped_refptr<media::MediaLog> media_log) override;
+
+    private:
 
       EGLContent::MainDelegate* delegate_;
 

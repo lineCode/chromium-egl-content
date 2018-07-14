@@ -14,12 +14,13 @@
 
 #include "display_delegate.h"
 
+#include "string.h"
+
 #include <iostream>
 
 DemoDisplayDelegate::DemoDisplayDelegate(int width, int height)
   : width_(width), height_(height) {
   EGLint egl_major, egl_minor;
-  /* FIXME : ASSERT display_ != NULL */
 }
 
 DemoDisplayDelegate::~DemoDisplayDelegate() {
@@ -42,11 +43,24 @@ EGLNativeWindowType DemoDisplayDelegate::CreateNativeWindow() {
   XSizeHints sizehints;
   EGLint num_configs, visual_id;
 
+  memset(&attr, 0, sizeof (XSetWindowAttributes));
+  attr.background_pixel = 0;
+  attr.border_pixel = 0;
+  attr.backing_store = Always;
   screen = DefaultScreen(x_display_);
   root = RootWindow(x_display_, screen);
-  x_window_ = XCreateSimpleWindow(x_display_, root, 0, 0, width_, height_, 0, 2,
-                                  BlackPixel(x_display_, screen));
+  x_window_ = XCreateWindow(
+    x_display_, root,
+    0 /* x */, 0 /* y */,
+    width_, height_,
+    0 /* border width */,
+    CopyFromParent /* depth */,
+    InputOutput /* class */,
+    CopyFromParent /* visual */,
+    CWBackPixmap | CWBitGravity /* mask */,
+    &attr);
   XMapWindow(x_display_, x_window_);
+  XFlush(x_display_);
 
   return x_window_;
 }
@@ -54,7 +68,8 @@ EGLNativeWindowType DemoDisplayDelegate::CreateNativeWindow() {
 void DemoDisplayDelegate::ReleaseNativeWindow() {
 }
 
-bool DemoDisplayDelegate::Resize(int size, int height, float scale_factor) {
+bool DemoDisplayDelegate::Resize(int width, int height, float scale_factor) {
+  XResizeWindow(x_display_, x_window_, width, height);
 }
 
 void DemoDisplayDelegate::GetSize(int* width, int* height) {

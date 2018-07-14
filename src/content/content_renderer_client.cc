@@ -18,6 +18,7 @@
 #include "content/eglcontent/api/main_delegate.h"
 #include "content/eglcontent/renderer/browser_host.h"
 #include "content/eglcontent/content/content_renderer_client.h"
+// #include "content/eglcontent/media/media_renderer_factory.h"
 
 namespace content {
 
@@ -37,9 +38,9 @@ namespace content {
   void EGLContentRendererClient::RenderViewCreated(RenderView* render_view) {
   }
 
-  void EGLContentRendererClient::CreateBrowser(RenderView* render_view, RenderFrame* render_frame) {
-    if (!render_view || !render_frame || browser_host_.get())
-      return;
-  }
-
+  // std::unique_ptr<media::RendererFactory>
+  // EGLContentRendererClient::CreateMediaRendererFactory(scoped_refptr<media::MediaLog> media_log) {
+  //   return std::unique_ptr<media::RendererFactory>(
+  //     new EGLContentMediaRendererFactory(media_log));
+  // }
 }
